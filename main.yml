@@ -1,0 +1,10 @@
+---
+- name: Update web servers
+  hosts: localhost
+  tasks:
+  - name: Ensure apache is at the latest version
+    ansible.builtin.set_fact:
+      some_variable: "This is my first ansible project"
+  - name: debug for setfact
+    ansible.builtin.debug:
+      var: some_variable
