@@ -1,0 +1,112 @@
+pipeline {
+    agent any
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                    credentialsId: 'your_github_credentials',
+                    url: 'https://github.com/your_username/your_repository.git'
+            }
+        }
+        stage('Execute Ansible playbook') {
+            steps {
+                ansiblePlaybook playbook: 'copy_jar_file.yml'
+            }
+        }
+        stage('Transfer jar file') {
+            steps {
+                script {
+                    def servers = ['server1.example.com', 'server2.example.com', 'server3.example.com']
+                    servers.each { server ->
+                        sshPublisher(
+                            sshPublisherDesc: [
+                                configName: 'your_ssh_credentials',
+                                hostname: server
+                            ],
+                            transfers: [
+                                sshTransfer(
+                                    cleanRemote: false,
+                                    excludes: '',
+                                    execCommand: '',
+                                    flatten: false,
+                                    makeEmptyDirs: false,
+                                    noDefaultExcludes: false,
+                                    patternSeparator: '[, ]+',
+                                    remoteDirectory: '/home/your_username/',
+                                    remoteDirectorySDF: false,
+                                    remoteFiles: 'your_jar_file.jar',
+                                    removePrefix: '',
+                                    sourceFiles: 'your_jar_file.jar'
+                                )
+                            ]
+                        )
+                    }
+                }
+            }
+        }
+        stage('Deploy jar file') {
+            steps {
+                script {
+                    def servers = ['server1.example.com', 'server2.example.com', 'server3.example.com']
+                    servers.each { server ->
+                        sshPublisher(
+                            sshPublisherDesc: [
+                                configName: 'your_ssh_credentials',
+                                hostname: server
+                            ],
+                            publishers: [
+                                sshPublisherDesc(
+                                    transfers: [
+                                        sshTransfer(
+                                            cleanRemote: false,
+                                            excludes: '',
+                                            execCommand: 'sudo systemctl stop your_service_name',
+                                            flatten: false,
+                                            makeEmptyDirs: false,
+                                            noDefaultExcludes: false,
+                                            patternSeparator: '[, ]+',
+                                            remoteDirectory: '/home/your_username/',
+                                            remoteDirectorySDF: false,
+                                            remoteFiles: '',
+                                            removePrefix: '',
+                                            sourceFiles: ''
+                                        ),
+                                        sshTransfer(
+                                            cleanRemote: false,
+                                            excludes: '',
+                                            execCommand: 'sudo cp /home/your_username/your_jar_file.jar /opt/your_service_directory/',
+                                            flatten: false,
+                                            makeEmptyDirs: false,
+                                            noDefaultExcludes: false,
+                                            patternSeparator: '[, ]+',
+                                            remoteDirectory: '/home/your_username/',
+                                            remoteDirectorySDF: false,
+                                            remoteFiles: '',
+                                            removePrefix: '',
+                                            sourceFiles: ''
+                                        ),
+                                        sshTransfer(
+                                            cleanRemote: false,
+                                            excludes: '',
+                                            execCommand: 'sudo systemctl start your_service_name',
+                                            flatten: false,
+                                            makeEmptyDirs: false,
+                                            noDefaultExcludes: false,
+                                            patternSeparator: '[, ]+',
+                                            remoteDirectory: '/home/your_username/',
+                                            remoteDirectorySDF: false,
+                                            remoteFiles: '',
+                                            removePrefix: '',
+                                            sourceFiles: ''
+                                        )
+                                    ]
+                                )
+                            ]
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
